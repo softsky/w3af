@@ -26,10 +26,47 @@ stop_on_first_exception = False
 interface = ppp0
 local_ip_address = 10.5.6.18
 msf_location = /opt/metasploit3/bin/
+params_max_variants = 10
+path_max_variants = 50
 
 [audit.sqli]
 
 [audit.os_commanding]
+
+[audit.blind_sqli]
+eq_limit = 0.9
+
+[audit.file_upload]
+extensions = gif,html,bmp,jpg,png,txt
+
+[audit.lfi]
+
+[output.text_file]
+verbose = True
+output_file = /var/log/cloudscan/w3af_runtime.log
+http_output_file = /var/log/cloudscan/w3af_runtime_http.log
+
+[crawl.noah_spider]
+follow_regex = .*
+ignore_regex =
+only_forward = False
+pipe_address =
+max_depth = 0
+max_urls = 0
+use_webkit = False
+
+[crawl.phpinfo]
+
+[crawl.sitemap_xml]
+
+[crawl.oracle_discovery]
+
+[crawl.robots_txt]
+
+[crawl.phishtank]
+
+[crawl.bing_spider]
+result_limit = 300
 
 [http-settings]
 proxy_port = 8080
@@ -43,31 +80,12 @@ max_http_retries = 2
 ntlm_auth_user = 
 ntlm_auth_passwd = 
 ignore_session_cookies = False
-timeout = 0
-user_agent = w3af.org
+timeout = 30
+user_agent = CloudScan/1.1
 basic_auth_user = 
 basic_auth_passwd = 
 string_match_404 = 
 cookie_jar_file = 
 ntlm_auth_domain = 
 ntlm_auth_url = 
-
-[audit.blind_sqli]
-eq_limit = 0.9
-
-[output.console]
-verbose = True
-use_colors = True
-
-[crawl.web_spider]
-follow_regex = .*
-ignore_regex = 
-only_forward = False
-
-[audit.file_upload]
-extensions = gif,html,bmp,jpg,png,txt
-
-[audit.lfi]
-
-[crawl.web_spider]
-
+webkit_address = http://127.0.0.1:25555

@@ -26,6 +26,7 @@ import zlib
 from cStringIO import StringIO
 
 from w3af.core.data.url.handlers.cache import SQLCachedResponse
+from w3af.core.data.url.HTTPResponse import HTTPResponse
 
 
 class HTTPGzipProcessor(urllib2.BaseHandler):
@@ -48,27 +49,30 @@ class HTTPGzipProcessor(urllib2.BaseHandler):
         #
         # post-process response
         #
-        enc_hdrs = response.info().getheaders("Content-encoding")
+        if isinstance(response, HTTPResponse):
+            enc_hdrs = response.headers.getheaders('Content-encoding')
+            body = response.body
+        else:
+            enc_hdrs = response.info().getheaders("Content-encoding")
+            body = response.read()
+
         for enc_hdr in enc_hdrs:
             try:
                 # Decompress
                 if ("gzip" in enc_hdr) or ("compress" in enc_hdr):
-                    body = response.read()
                     data = gzip.GzipFile(fileobj=StringIO(body)).read()
                 elif "deflate" in enc_hdr:
-                    body = response.read()
                     data = zlib.decompress(body)
                 else:
-                    data = response.read()
-            except:
+                    data = body
+            except Exception:
                 # I get here when the HTTP response body is corrupt
                 # return the same thing that I got... can't do magic yet!
-                return response
+                break
             else:
                 # The response was successfully unzipped
                 response.set_body(data)
-                return response
-
+                break
         return response
 
     https_request = http_request

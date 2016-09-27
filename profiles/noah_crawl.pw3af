@@ -1,24 +1,37 @@
 [profile]
-name = empty_profile
-description = This is an empty profile that you can use to start a new configuration from.
+name = only_crawl
+description = Perform a crawl of the target site.
+
+[crawl.noah_spider]
+follow_regex = .*
+ignore_regex =
+only_forward = False
+pipe_address =
+max_depth = 0
+max_urls = 0
+use_webkit = False
 
 [output.text_file]
 verbose = True
 output_file = /var/log/cloudscan/w3af_runtime.log
 http_output_file = /var/log/cloudscan/w3af_runtime_http.log
 
+[output.console]
+verbose = True
+
 [misc-settings]
 form_fuzzing_mode = tmb
 fuzzed_files_extension = gif
-max_discovery_time = 120
 fuzzable_headers =
 fuzz_form_files = True
 fuzz_url_filenames = False
-interface = ppp0
-local_ip_address = 10.5.6.18
+max_discovery_time = 120
 non_targets =
 fuzz_url_parts = False
+fuzz_cookies = False
 stop_on_first_exception = False
+interface = ppp0
+local_ip_address = 10.5.6.18
 msf_location = /opt/metasploit3/bin/
 params_max_variants = 10
 path_max_variants = 50
@@ -27,9 +40,9 @@ path_max_variants = 50
 proxy_port = 8080
 url_parameter =
 never_404 =
-basic_auth_domain =
-proxy_address =
 headers_file =
+proxy_address =
+basic_auth_domain =
 always_404 =
 max_http_retries = 2
 ntlm_auth_user =
@@ -43,6 +56,7 @@ string_match_404 =
 cookie_jar_file =
 ntlm_auth_domain =
 ntlm_auth_url =
+rand_user_agent = False
+max_file_size = 400000
+max_requests_per_second = 0
 webkit_address = http://127.0.0.1:25555
-
-

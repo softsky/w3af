@@ -41,6 +41,7 @@ from w3af.core.controllers.core_helpers.exception_handler import ExceptionData
 
 from w3af.core.controllers.exceptions import (ScanMustStopException,
                                               ScanMustStopByUserRequest)
+from w3af.core.controllers.exc import ErrorCode
 
 
 class CoreStrategy(object):
@@ -87,11 +88,14 @@ class CoreStrategy(object):
 
         :return: No value is returned.
         """
+        om.out.debug('Strategy start')
         try:
-            self.verify_target_server()
-            
+            # batman-fix no need this
+            # self.verify_target_server()
+
             self._setup_grep()
-            self._setup_auth()
+            # batman-fix must login website first, avoid cache no login page, and return err_code
+            err_code = self._setup_auth()
             self._setup_crawl_infrastructure()
             self._setup_audit()
             self._setup_bruteforce()
@@ -125,12 +129,17 @@ class CoreStrategy(object):
             raise exc_info[0], exc_info[1], exc_info[2]
 
         else:
+            om.out.debug('Producer all finished, going to join all consumers')
+
             # Wait for all consumers to finish
             self.join_all_consumers()
 
+            om.out.debug('Consumers all finished, going to join core workpool')
             # While the consumers might have finished, they certainly queue
             # tasks in the core's worker_pool, which need to be processed too
             self._w3af_core.worker_pool.finish()
+
+            return err_code
 
     def stop(self):
         self.terminate()
@@ -173,12 +182,15 @@ class CoreStrategy(object):
         them.
         """
         self._teardown_crawl_infrastructure()        
-        
+        om.out.debug('[JOIN] crawl finished')
         self._teardown_audit()
+        om.out.debug('[JOIN] audit finished')
         self._teardown_bruteforce()
-                
+        om.out.debug('[JOIN] bruteforce finished')
         self._teardown_auth()
-        self._teardown_grep()        
+        om.out.debug('[JOIN] auth finished')
+        self._teardown_grep()
+        om.out.debug('[JOIN] grep finished')
 
     def add_observer(self, observer):
         self._observers.append(observer)
@@ -500,7 +512,8 @@ class CoreStrategy(object):
         if self._auth_consumer is not None:
             self._auth_consumer.force_login()
 
-    def _setup_auth(self, timeout=5):
+    # batman-fix increase timeout
+    def _setup_auth(self, timeout=30):
         """
         Start the thread that will make sure the xurllib always has a "fresh"
         session. The thread will call is_logged() and login() for each enabled
@@ -511,11 +524,13 @@ class CoreStrategy(object):
         method.
         """
         auth_plugins = self._w3af_core.plugins.plugins['auth']
-
         if auth_plugins:
             self._auth_consumer = auth(auth_plugins, self._w3af_core, timeout)
-            self._auth_consumer.start()
-            self._auth_consumer.force_login()
+            if self._auth_consumer.force_login():
+                self._auth_consumer.start()
+            else:
+                return ErrorCode.SCANNER_LOGIN_FAILED
+        return ErrorCode.NORMAL
 
     def _setup_audit(self):
         """

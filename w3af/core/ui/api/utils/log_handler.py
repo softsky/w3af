@@ -26,6 +26,7 @@ import tempfile
 
 from w3af.core.data.constants.severity import MEDIUM
 from w3af.core.controllers.plugins.output_plugin import OutputPlugin
+from w3af.core.controllers.misc.temp_dir import get_temp_dir
 
 DEBUG = 'debug'
 INFORMATION = 'information'
@@ -54,13 +55,15 @@ class RESTAPIOutput(OutputPlugin):
         # https://github.com/andresriancho/w3af/issues/11214
         self.log = shelve.open(self.get_db_backend(), protocol=2)
 
+    # batman-fix save all tmp file to one dir, convenience to clean
     def get_db_backend(self):
         if self._db_backend is None:
-            fd, self._db_backend = tempfile.mkstemp(prefix='w3af-api-log',
-                                                    suffix='shelve',
-                                                    dir=tempfile.tempdir)
-            os.close(fd)
-            os.unlink(self._db_backend)
+            # fd, self._db_backend = tempfile.mkstemp(prefix='w3af-api-log',
+            #                                         suffix='shelve',
+            #                                         dir=tempfile.tempdir)
+            # os.close(fd)
+            # os.unlink(self._db_backend)
+            self._db_backend = os.path.join(get_temp_dir(), 'w3af-api-log')
 
         return self._db_backend
 

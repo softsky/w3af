@@ -37,6 +37,7 @@ class SQLCachedResponse(CachedResponse):
     def __init__(self, req):
         self._hist_obj = None
         CachedResponse.__init__(self, req)
+        self.id = self._hist_obj.id
 
     def _get_from_response(self, part):
 
@@ -60,19 +61,21 @@ class SQLCachedResponse(CachedResponse):
         return res
 
     def _get_hist_obj(self):
-        hist_obj = self._hist_obj
-        if hist_obj is None:
+        if self._hist_obj is None:
             historyobjs = HistoryItem().find([('alias', self._hash_id, "=")])
-            self._hist_obj = hist_obj = historyobjs[0] if historyobjs else None
-        return hist_obj
+            self._hist_obj = historyobjs[0] if historyobjs else None
+        return self._hist_obj
 
     @staticmethod
     def store_in_cache(request, response):
-        # Create the http response object
-        resp = HTTPResponse.from_httplib_resp(response,
-                                              original_url=request.url_object)
-        resp.set_id(response.id)
-        resp.set_alias(gen_hash(request))
+        if not isinstance(response, HTTPResponse):
+            # Create the http response object
+            resp = HTTPResponse.from_httplib_resp(response,
+                                                  original_url=request.url_object)
+            resp.set_id(response.id)
+            resp.set_alias(gen_hash(request))
+        else:
+            resp = response
 
         hi = HistoryItem()
         hi.request = request

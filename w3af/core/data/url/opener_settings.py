@@ -75,6 +75,7 @@ class OpenerSettings(Configurable):
 
         # Openers
         self._uri_opener = None
+        self.webkit_address = None
 
         # Some internal variables
         self.need_update = True
@@ -615,6 +616,10 @@ class OpenerSettings(Configurable):
         o = opt_factory('url_parameter', cfg.get('url_parameter'), d,
                         STRING, help=h)
         ol.add(o)
+
+        d = 'webkit address'
+        o = opt_factory('webkit_address', cfg.get('webkit_address'), d, STRING)
+        ol.add(o)
         
         return ol
 
@@ -680,6 +685,9 @@ class OpenerSettings(Configurable):
         cfg['never_404'] = get_opt_value('never_404')
         cfg['always_404'] = get_opt_value('always_404')
         cfg['string_match_404'] = get_opt_value('string_match_404')
+
+        self.webkit_address = get_opt_value('webkit_address')
+        cfg['webkit_address'] = self.webkit_address
 
     def get_desc(self):
         return ('This section is used to configure URL settings that '

@@ -213,8 +213,9 @@ class URL(DiskItem):
         if scheme == netloc == '' and not path.startswith('/'):
             # By default we set the protocol to "http"
             scheme = 'http'
-            netloc = path
-            path = ''
+            parts = path.split('/', 1)
+            netloc = parts[0]
+            path = len(parts) > 1 and '/' + parts[1] or '/'
 
         self.scheme = scheme or u''
         self.netloc = netloc or u''
@@ -530,7 +531,9 @@ class URL(DiskItem):
         :param url: The url to parse.
         :return: Returns a boolean that indicates if <url>'s domain is valid
         """
-        domain_re = '[a-z0-9-]+(\.[a-z0-9-]+)*(:\d\d?\d?\d?\d?)?$'
+        # [Batman-fix] add rex _
+        domain_re = '[a-z0-9-_]+(\.[a-z0-9-_]+)*(:\d\d?\d?\d?\d?)?$'
+        # domain_re = '[a-z0-9-]+(\.[a-z0-9-]+)*(:\d\d?\d?\d?\d?)?$'
         return re.match(domain_re, self.netloc) is not None
 
     def get_net_location(self):

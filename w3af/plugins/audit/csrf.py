@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 """
 import copy
 
-from math import log
+from math import log, floor
 from itertools import chain
 
 import w3af.core.controllers.output_manager as om
@@ -32,7 +32,7 @@ from w3af.core.controllers.misc.fuzzy_string_cmp import relative_distance_boolea
 from w3af.core.data.fuzzer.fuzzer import create_mutants
 from w3af.core.data.fuzzer.mutants.headers_mutant import HeadersMutant
 from w3af.core.data.kb.vuln import Vuln
-
+from w3af.core.data.url.HTTPRequest import HTTPRequest
 
 COMMON_CSRF_NAMES = (
     'csrf_token',
@@ -73,6 +73,8 @@ class csrf(AuditPlugin):
         if not self._is_suitable(freq):
             return
 
+        if self._verify_param(freq) < 2:
+            return
         # Referer/Origin check
         #
         # IMPORTANT NOTE: I'm aware that checking for the referer header does
@@ -138,17 +140,27 @@ class csrf(AuditPlugin):
         # in applications that use mod_rewrite. Example: A CSRF in this URL:
         # http://host.tld/users/remove/id/123
         if not freq.get_uri().has_query_string() and not freq.get_raw_data():
+            if 'date' in freq.get_uri().url_string:
+                req = HTTPRequest.from_fuzzable_request(freq)
             return False
 
         om.out.debug('%s is suitable for CSRF attack' % freq.get_url())
         return True
+
+    def _verify_param(self, freq):
+        post_data = freq.get_raw_data()
+        querystring = freq.get_querystring()
+        params = []
+        for token in chain(post_data.iter_tokens(), querystring.iter_tokens()):
+            params.append(token.get_name())
+        return len(params)
 
     def _is_origin_checked(self, freq, orig_response):
         """
         :return: True if the remote web application verifies the Referer before
                  processing the HTTP request.
         """
-        fake_ref = 'http://www.w3af.org/'
+        fake_ref = 'http://www.cloudguarding.com/'
 
         mutant = HeadersMutant(copy.deepcopy(freq))
         headers = mutant.get_dc()
@@ -170,7 +182,7 @@ class csrf(AuditPlugin):
         querystring = freq.get_querystring()
         
         for token in chain(post_data.iter_tokens(), querystring.iter_tokens()):
-            
+
             if self.is_csrf_token(token.get_name(), token.get_value()):
 
                 msg = 'Found CSRF token %s in parameter %s for URL %s.'
@@ -242,9 +254,9 @@ class csrf(AuditPlugin):
                 return True
     
         # Calculate entropy
-        entropy = self.shannon_entropy(value.encode('utf8', errors='ignore'))
-        if entropy >= min_entropy:
-            return True
+        # entropy = self.shannon_entropy(value.encode('utf8', errors='ignore'))
+        # if entropy >= min_entropy:
+        #     return True
 
         return False
 

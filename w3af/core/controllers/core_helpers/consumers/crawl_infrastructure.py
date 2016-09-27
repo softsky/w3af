@@ -149,9 +149,6 @@ class crawl_infrastructure(BaseConsumer):
             if plugin in self._disabled_plugins:
                 continue
 
-            om.out.debug('%s plugin is testing: "%s"' % (plugin.get_name(),
-                                                         work_unit))
-
             self._run_observers(work_unit)
 
             # TODO: unittest what happens if an exception (which is not handled
@@ -441,15 +438,12 @@ class crawl_infrastructure(BaseConsumer):
 
         :return: A list with the newly found fuzzable requests.
         """
-        args = (plugin.get_name(), fuzzable_request.get_uri())
-        om.out.debug('Called _discover_worker(%s,%s)' % args)
-
         # Status reporting
         status = self._w3af_core.status
         status.set_running_plugin('crawl', plugin.get_name())
         status.set_current_fuzzable_request('crawl', fuzzable_request)
-        om.out.debug('%s is testing "%s"' % (plugin.get_name(),
-                                             fuzzable_request.get_uri()))
+
+        om.out.debug('[crawl plugin] %s is testing "%s"' % (plugin.get_name(), fuzzable_request.get_uri()))
 
         try:
             result = plugin.discover_wrapper(fuzzable_request)

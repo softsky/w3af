@@ -2,10 +2,6 @@
 description = This profile performs a full audit of the target website, using only the web_spider plugin for crawling.
 name = full_audit
 
-[output.console]
-verbose = False
-use_colors = True
-
 [audit.file_upload]
 extensions = gif,html
 
@@ -27,7 +23,6 @@ use_echo = True
 
 [audit.generic]
 diff_ratio = 0.35
-extensive = False
 
 [audit.format_string]
 
@@ -72,10 +67,27 @@ use_w3af_site = True
 
 [audit.frontpage]
 
-[crawl.web_spider]
+[crawl.noah_spider]
 only_forward = False
 follow_regex = .*
-ignore_regex = 
+ignore_regex =
+pipe_address =
+max_depth = 0
+max_urls = 0
+use_webkit = False
+
+[crawl.phpinfo]
+
+[crawl.sitemap_xml]
+
+[crawl.oracle_discovery]
+
+[crawl.robots_txt]
+
+[crawl.phishtank]
+
+[crawl.bing_spider]
+result_limit = 300
 
 [bruteforce.basic_auth]
 usersFile = %ROOT_PATH%/core/controllers/bruteforce/users.txt
@@ -171,7 +183,7 @@ only_target_domain = True
 
 [grep.strange_headers]
 
-[grep.ssn]
+;[grep.ssn]
 
 [grep.oracle]
 
@@ -228,9 +240,11 @@ local_ip_address = 10.5.6.13
 non_targets = 
 msf_location = /opt/metasploit3/bin/
 fuzz_cookies = False
+params_max_variants = 10
+path_max_variants = 50
 
 [http-settings]
-timeout = 0
+timeout = 30
 headers_file = 
 basic_auth_user = 
 basic_auth_passwd = 
@@ -243,15 +257,19 @@ cookie_jar_file =
 ignore_session_cookies = False
 proxy_port = 8080
 proxy_address = 
-user_agent = w3af.org
+user_agent = CloudScan/1.1
 max_http_retries = 2
 always_404 = 
 never_404 = 
 string_match_404 = 
 url_parameter = 
 max_file_size = 400000
+webkit_address = http://127.0.0.1:25555
 
 [output.text_file]
+verbose = True
+output_file = /var/log/cloudscan/w3af_runtime.log
+http_output_file = /var/log/cloudscan/w3af_runtime_http.log
 
 [audit.cors_origin]
 

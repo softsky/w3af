@@ -1,3 +1,33 @@
+[profile]
+name = fast_scan
+description = Perform a fast scan of the target site, using only a few discovery plugins and the fastest audit plugins.
+
+[audit.xss]
+persistent_xss = True
+
+[audit.sqli]
+
+[audit.eval]
+use_time_delay = True
+use_echo = True
+
+[audit.dav]
+
+[audit.rfi]
+use_w3af_site = True
+listen_address =
+listen_port = 44449
+
+[audit.os_commanding]
+
+[audit.blind_sqli]
+eq_limit = 0.9
+
+[audit.file_upload]
+extensions = gif,html,bmp,jpg,png,txt
+
+[audit.lfi]
+
 [grep.strange_headers]
 
 [grep.svn_users]
@@ -6,27 +36,9 @@
 
 [grep.blank_body]
 
-[misc-settings]
-form_fuzzing_mode = tmb
-fuzzed_files_extension = gif
-max_discovery_time = 120
-fuzzable_headers = 
-fuzz_form_files = True
-fuzz_url_filenames = False
-interface = ppp0
-local_ip_address = 10.5.6.18
-non_targets = 
-fuzz_url_parts = False
-stop_on_first_exception = False
-msf_location = /opt/metasploit3/bin/
-
 [grep.strange_http_codes]
 
 [grep.oracle]
-
-[output.console]
-verbose = False
-use_colors = True
 
 [grep.motw]
 
@@ -42,18 +54,9 @@ use_colors = True
 
 [grep.error_500]
 
-[crawl.web_spider]
-
 [grep.feeds]
 
-[audit.xss]
-persistent_xss = True
-
 [grep.hash_analysis]
-
-[profile]
-name = fast_scan
-description = Perform a fast scan of the target site, using only a few discovery plugins and the fastest audit plugins.
 
 [grep.lang]
 
@@ -61,13 +64,9 @@ description = Perform a fast scan of the target site, using only a few discovery
 
 [grep.form_autocomplete]
 
-[grep.ssn]
-
 [grep.dot_net_event_validation]
 
 [grep.meta_tags]
-
-[audit.sqli]
 
 [grep.strange_reason]
 
@@ -88,36 +87,6 @@ only_target_domain = True
 
 [grep.path_disclosure]
 
-[http-settings]
-proxy_port = 8080
-url_parameter = 
-never_404 = 
-basic_auth_domain = 
-proxy_address = 
-headers_file = 
-always_404 = 
-max_http_retries = 2
-ntlm_auth_user = 
-ntlm_auth_passwd = 
-ignore_session_cookies = False
-timeout = 0
-user_agent = w3af.org
-basic_auth_user = 
-basic_auth_passwd = 
-string_match_404 = 
-cookie_jar_file = 
-ntlm_auth_domain = 
-ntlm_auth_url = 
-
-[grep.wsdl_greper]
-
-[grep.http_auth_detect]
-
-[crawl.web_spider]
-only_forward = False
-follow_regex = .*
-ignore_regex = 
-
 [grep.symfony]
 override = False
 
@@ -125,3 +94,71 @@ override = False
 
 [grep.click_jacking]
 
+[grep.wsdl_greper]
+
+[grep.http_auth_detect]
+
+[crawl.noah_spider]
+follow_regex = .*
+ignore_regex =
+only_forward = False
+pipe_address =
+max_depth = 0
+max_urls = 0
+use_webkit = False
+
+[crawl.phpinfo]
+
+[crawl.sitemap_xml]
+
+[crawl.oracle_discovery]
+
+[crawl.robots_txt]
+
+[crawl.phishtank]
+
+[crawl.bing_spider]
+result_limit = 300
+
+[output.text_file]
+verbose = True
+output_file = /var/log/cloudscan/w3af_runtime.log
+http_output_file = /var/log/cloudscan/w3af_runtime_http.log
+
+[http-settings]
+proxy_port = 8080
+url_parameter =
+never_404 =
+basic_auth_domain =
+proxy_address =
+headers_file =
+always_404 =
+max_http_retries = 2
+ntlm_auth_user =
+ntlm_auth_passwd =
+ignore_session_cookies = False
+timeout = 30
+user_agent = CloudScan/1.1
+basic_auth_user =
+basic_auth_passwd =
+string_match_404 =
+cookie_jar_file =
+ntlm_auth_domain =
+ntlm_auth_url =
+webkit_address = http://127.0.0.1:25555
+
+[misc-settings]
+form_fuzzing_mode = tmb
+fuzzed_files_extension = gif
+max_discovery_time = 120
+fuzzable_headers = 
+fuzz_form_files = True
+fuzz_url_filenames = False
+interface = ppp0
+local_ip_address = 10.5.6.18
+non_targets = 
+fuzz_url_parts = False
+stop_on_first_exception = False
+msf_location = /opt/metasploit3/bin/
+params_max_variants = 10
+path_max_variants = 50

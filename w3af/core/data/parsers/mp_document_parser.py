@@ -261,7 +261,7 @@ def process_get_tags_by_filter(http_resp, tags, yield_text,
     pid = multiprocessing.current_process().pid
     processes[hash_string] = pid
 
-    document_parser = DocumentParser(http_resp)
+    document_parser = DocumentParser(http_resp, False)
 
     # Not all parsers have tags
     if not hasattr(document_parser, 'get_tags_by_filter'):

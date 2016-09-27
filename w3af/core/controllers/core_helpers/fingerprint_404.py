@@ -198,7 +198,7 @@ class fingerprint_404(object):
         # I don't use the cache, because the URLs are random and the only thing
         # that cache does is to fill up disk space
         try:
-            response = self._uri_opener.GET(url404, cache=False, grep=False)
+            response = self._uri_opener.GET(url404, cache=False, grep=False, save=False)
         except HTTPRequestException, hre:
             message = 'Exception found while detecting 404: "%s"'
             raise FourOhFourDetectionException(message % hre)

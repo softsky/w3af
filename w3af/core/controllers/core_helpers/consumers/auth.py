@@ -90,15 +90,26 @@ class auth(BaseConsumer):
         """
         for plugin in self._consumer_plugins:
             try:
-                if not plugin.is_logged():
-                    plugin.login()
+                if plugin.is_logged():
+                    return True
+
+                if plugin.login():
+                    return True
+
             except Exception, e:
                 self.handle_exception('auth', plugin.get_name(), None, e)
-    
+
+        return False
+
     def async_force_login(self):
         self.in_queue_put(FORCE_LOGIN)
 
     def force_login(self):
-        # pylint: disable=E1120
-        self._login()
-        # pylint: enable=E1120
+        for plugin in self._consumer_plugins:
+            try:
+                if plugin.login():
+                    return True
+            except Exception, e:
+                self.handle_exception('auth', plugin.get_name(), None, e)
+
+        return False

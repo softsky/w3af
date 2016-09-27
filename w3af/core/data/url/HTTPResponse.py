@@ -198,9 +198,12 @@ class HTTPResponse(object):
         
         headers_inst = Headers(hdrs.items())
         url = URL(udict['uri'])
+        redirect_url = url
+        if udict.get('redirect_uri'):
+            redirect_url = URL(udict['redirect_uri'])
     
-        return cls(code, body, headers_inst, url, url, msg=msg, _id=_id,
-                   time=_time)
+        return cls(code, body, headers_inst, redirect_url, url, msg=msg, _id=_id,
+                   time=_time, charset=udict.get('charset'))
 
     def to_dict(self):
         """
@@ -212,14 +215,12 @@ class HTTPResponse(object):
         
         # Note: The Headers() object can be serialized by msgpack because it
         #       inherits from dict() and doesn't mangle it too much
-        sdict['code'], sdict['msg'], sdict['headers'] = (self.get_code(),
-                                                         self.get_msg(),
-                                                         dict(self.get_headers()))
-        sdict['body'], sdict['time'], sdict['id'] = (self.get_body(),
-                                                     self.get_wait_time(),
-                                                     self.get_id())
+        sdict['code'], sdict['msg'], sdict['headers'] = (self.get_code(), self.get_msg(), dict(self.get_headers()))
+        sdict['body'], sdict['time'], sdict['id'] = (self.get_body(), self.get_wait_time(), self.get_id())
+        sdict['charset'] = self.charset
         
         sdict['uri'] = self.get_uri().url_string
+        sdict['redirect_uri'] = self.get_redir_url().url_string
     
         return serializable_dict
 
