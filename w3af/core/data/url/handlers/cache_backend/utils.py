@@ -10,16 +10,19 @@ def gen_hash(request):
         * https://github.com/andresriancho/w3af/issues/1917
     """
     req = request
-    headers_1 = ''.join('%s%s' % (safe_str(h), safe_str(v)) for h, v in req.headers.iteritems())
-    headers_2 = ''.join('%s%s' % (safe_str(h), safe_str(v)) for h, v in req.unredirected_hdrs.iteritems())
-    
-    the_str = '%s%s%s%s%s' % (safe_str(req.get_method()),
-                              safe_str(req.get_full_url()),
-                              headers_1,
-                              headers_2,
-                              safe_str(req.get_data() or ''))
+    # headers_1 = ''.join('%s%s' % (safe_str(h), safe_str(v)) for h, v in req.headers.iteritems())
+    # headers_2 = ''.join('%s%s' % (safe_str(h), safe_str(v)) for h, v in req.unredirected_hdrs.iteritems())
+    #
+    # the_str = '%s%s%s%s%s' % (safe_str(req.get_method()),
+    #                           safe_str(req.get_full_url()),
+    #                           headers_1,
+    #                           headers_2,
+    #                           safe_str(req.get_data() or ''))
 
-    return hashlib.md5(the_str).hexdigest()
+    # batman: assume the site not change during the scan task
+    the_str = '%s%s%s' % (safe_str(req.get_method()), safe_str(req.get_full_url()), safe_str(req.get_data() or ''))
+    hash_id = hashlib.md5(the_str).hexdigest()
+    return hash_id
 
 
 def safe_str(obj):

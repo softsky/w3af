@@ -1,4 +1,6 @@
-[crawl.phpinfo]
+[profile]
+description = The Open Web Application Security Project (OWASP) is a worldwide free and open community focused on improving the security of application software. OWASP searched for and published the ten most common security flaws. This profile search for this top 10 security flaws. For more information about the security flaws: http://www.owasp.org/index.php/OWASP_Top_Ten_Project .
+name = OWASP_TOP10
 
 [audit.frontpage]
 
@@ -6,73 +8,47 @@
 use_time_delay = True
 use_echo = True
 
-[grep.motw]
+[audit.rfi]
+use_w3af_site = True
+listen_address =
+listen_port = 44449
 
-[grep.credit_cards]
+[audit.htaccess_methods]
+
+[audit.dav]
+
+[audit.response_splitting]
+
+[audit.format_string]
+
+[audit.global_redirect]
+
+[audit.xst]
+
+[audit.xss]
+persistent_xss = True
+
+[audit.file_upload]
+extensions = gif,html
+
+[audit.redos]
 
 [audit.blind_sqli]
 eq_limit = 0.9
 
-[infrastructure.allowed_methods]
-reportDavOnly = True
-execOneTime = False
-
-[grep.feeds]
-
-[infrastructure.halberd]
-
 [audit.phishing_vector]
 
-[grep.path_disclosure]
-
 [audit.csrf]
-
-[grep.hash_analysis]
-
-[infrastructure.dns_wildcard]
-
-[infrastructure.detect_transparent_proxy]
 
 [audit.mx_injection]
 
 [audit.preg_replace]
 
-[grep.strange_headers]
-
-[misc-settings]
-form_fuzzing_mode = tmb
-fuzzed_files_extension = gif
-fuzzable_headers = 
-fuzz_form_files = True
-fuzz_url_filenames = False
-max_discovery_time = 120
-non_targets = 
-fuzz_url_parts = False
-fuzz_cookies = False
-stop_on_first_exception = False
-interface = ppp0
-local_ip_address = 10.5.6.18
-msf_location = /opt/metasploit3/bin/
-
-[infrastructure.fingerprint_os]
-
 [audit.lfi]
-
-[infrastructure.afd]
 
 [audit.ldapi]
 
-[infrastructure.dot_net_errors]
-
 [audit.un_ssl]
-
-[infrastructure.shared_hosting]
-result_limit = 300
-
-[crawl.web_spider]
-follow_regex = .*
-ignore_regex = None
-only_forward = False
 
 [audit.ssl_certificate]
 minExpireDays = 30
@@ -82,9 +58,46 @@ caFileName = %ROOT_PATH%/plugins/audit/ssl_certificate/ca.pem
 
 [audit.ssi]
 
-[infrastructure.server_header]
+[audit.xpath]
+
+[audit.generic]
+diff_ratio = 0.35
 
 [audit.sqli]
+
+[crawl.noah_spider]
+follow_regex = .*
+ignore_regex =
+only_forward = False
+pipe_address =
+max_depth = 0
+max_urls = 0
+use_webkit = False
+
+[crawl.phpinfo]
+
+[crawl.sitemap_xml]
+
+[crawl.oracle_discovery]
+
+[crawl.robots_txt]
+
+[crawl.phishtank]
+
+[crawl.bing_spider]
+result_limit = 300
+
+[grep.motw]
+
+[grep.credit_cards]
+
+[grep.feeds]
+
+[grep.path_disclosure]
+
+[grep.hash_analysis]
+
+[grep.strange_headers]
 
 [grep.dot_net_event_validation]
 
@@ -103,56 +116,21 @@ only_target_domain = True
 
 [grep.strange_http_codes]
 
-[audit.xpath]
-
-[audit.generic]
-diff_ratio = 0.35
-extensive = False
-
 [grep.http_in_body]
-
-[crawl.sitemap_xml]
 
 [grep.file_upload]
 
-[infrastructure.fingerprint_WAF]
-
 [grep.error_500]
-
-[infrastructure.detect_reverse_proxy]
 
 [grep.lang]
 
-[infrastructure.server_status]
-
 [grep.objects]
-
-[infrastructure.hmap]
-gen_fingerprint = False
-
-[crawl.user_dir]
-
-[audit.htaccess_methods]
-
-[crawl.oracle_discovery]
 
 [grep.dom_xss]
 
-[target]
-target = 
-
-[audit.rfi]
-use_w3af_site = True
-listen_address = 
-listen_port = 44449
-
 [grep.wsdl_greper]
 
-[infrastructure.find_vhosts]
-
 [grep.http_auth_detect]
-
-[audit.response_splitting]
 
 [grep.svn_users]
 
@@ -162,74 +140,13 @@ listen_port = 44449
 
 [grep.error_pages]
 
-[audit.dav]
-
-[output.console]
-verbose = True
-use_colors = True
-
-[audit.format_string]
-
-[infrastructure.php_eggs]
-
 [grep.strange_parameters]
 
-[crawl.robots_txt]
-
-[audit.global_redirect]
-
-[audit.xst]
-
-[audit.xss]
-persistent_xss = True
-
-[profile]
-description = The Open Web Application Security Project (OWASP) is a worldwide free and open community focused on improving the security of application software. OWASP searched for and published the ten most common security flaws. This profile search for this top 10 security flaws. For more information about the security flaws: http://www.owasp.org/index.php/OWASP_Top_Ten_Project .
-name = OWASP_TOP10
-
 [grep.html_comments]
-
-[grep.ssn]
 
 [grep.code_disclosure]
 
 [grep.private_ip]
-
-[crawl.phishtank]
-
-[http-settings]
-proxy_port = 8080
-url_parameter = 
-never_404 = 
-headers_file = 
-proxy_address = 
-basic_auth_domain = 
-always_404 = 
-max_http_retries = 2
-ntlm_auth_user = 
-ntlm_auth_passwd = 
-ignore_session_cookies = False
-timeout = 0
-user_agent = w3af.org
-basic_auth_user = 
-basic_auth_passwd = 
-string_match_404 = 
-cookie_jar_file = 
-ntlm_auth_domain = 
-ntlm_auth_url = 
-rand_user_agent = False
-max_file_size = 400000
-max_requests_per_second = 0
-
-[crawl.bing_spider]
-result_limit = 300
-
-[audit.file_upload]
-extensions = gif,html
-
-[audit.redos]
-
-[crawl.web_spider]
 
 [grep.symfony]
 override = False
@@ -240,7 +157,87 @@ override = False
 
 [grep.strange_reason]
 
+[infrastructure.php_eggs]
+
 [infrastructure.allowed_methods]
 
 [infrastructure.server_header]
 
+[infrastructure.allowed_methods]
+reportDavOnly = True
+execOneTime = False
+
+[infrastructure.halberd]
+
+[infrastructure.dns_wildcard]
+
+[infrastructure.detect_transparent_proxy]
+
+[infrastructure.fingerprint_os]
+
+[infrastructure.afd]
+
+[infrastructure.dot_net_errors]
+
+[infrastructure.shared_hosting]
+result_limit = 300
+
+[infrastructure.server_header]
+
+[infrastructure.fingerprint_WAF]
+
+[infrastructure.detect_reverse_proxy]
+
+[infrastructure.server_status]
+
+[infrastructure.hmap]
+gen_fingerprint = False
+
+[infrastructure.find_vhosts]
+
+[output.text_file]
+verbose = True
+output_file = /var/log/cloudscan/w3af_runtime.log
+http_output_file = /var/log/cloudscan/w3af_runtime_http.log
+
+[misc-settings]
+form_fuzzing_mode = tmb
+fuzzed_files_extension = gif
+fuzzable_headers =
+fuzz_form_files = True
+fuzz_url_filenames = False
+max_discovery_time = 120
+non_targets =
+fuzz_url_parts = False
+fuzz_cookies = False
+stop_on_first_exception = False
+interface = ppp0
+local_ip_address = 10.5.6.18
+msf_location = /opt/metasploit3/bin/
+params_max_variants = 10
+path_max_variants = 50
+
+[http-settings]
+proxy_port = 8080
+url_parameter = 
+never_404 = 
+headers_file = 
+proxy_address = 
+basic_auth_domain =
+always_404 = 
+max_http_retries = 2
+ntlm_auth_user = 
+ntlm_auth_passwd = 
+ignore_session_cookies = False
+timeout = 30
+user_agent = CloudScan/1.1
+basic_auth_user = 
+basic_auth_passwd = 
+string_match_404 = 
+cookie_jar_file = 
+ntlm_auth_domain = 
+ntlm_auth_url = 
+rand_user_agent = False
+max_file_size = 400000
+max_requests_per_second = 0
+webkit_address = http://127.0.0.1:25555

@@ -27,10 +27,12 @@ import httplib
 import threading
 import traceback
 import functools
+import base64
 from contextlib import contextmanager
 from collections import deque
 
 import OpenSSL
+import requests
 
 import w3af.core.controllers.output_manager as om
 import w3af.core.data.kb.config as cf
@@ -44,6 +46,7 @@ from w3af.core.controllers.exceptions import (BaseFrameworkException,
 from w3af.core.data.parsers.doc.http_request_parser import http_request_parser
 from w3af.core.data.parsers.doc.url import URL
 from w3af.core.data.url.handlers.keepalive import URLTimeoutError
+from w3af.core.data.url.handlers.cache_backend.utils import gen_hash
 from w3af.core.data.url.HTTPResponse import HTTPResponse
 from w3af.core.data.url.HTTPRequest import HTTPRequest
 from w3af.core.data.dc.headers import Headers
@@ -70,6 +73,7 @@ class ExtendedUrllib(object):
     def __init__(self):
         self.settings = opener_settings.OpenerSettings()
         self._opener = None
+        self.request_session = requests.Session()
 
         # In exploit mode we disable some timeout/delay/error handling stuff
         self.exploit_mode = False
@@ -531,9 +535,8 @@ class ExtendedUrllib(object):
                                   headers=fuzz_req.get_headers(), cache=False,
                                   grep=False)
 
-    def send_mutant(self, mutant, callback=None, grep=True, cache=True,
-                    cookies=True, error_handling=True, timeout=None,
-                    follow_redirects=False, use_basic_auth=True):
+    def send_mutant(self, mutant, callback=None, grep=False, cache=True, cookies=True, error_handling=True, timeout=None,
+                    follow_redirects=False, use_basic_auth=True, use_webkit=False):
         """
         Sends a mutant to the remote web server.
 
@@ -569,6 +572,7 @@ class ExtendedUrllib(object):
             'timeout': timeout,
             'follow_redirects': follow_redirects,
             'use_basic_auth': use_basic_auth,
+            'use_webkit': use_webkit
         }
         method = mutant.get_method()
 
@@ -583,10 +587,9 @@ class ExtendedUrllib(object):
 
         return res
 
-    def GET(self, uri, data=None, headers=Headers(), cache=False,
-            grep=True, cookies=True, respect_size_limit=True,
-            error_handling=True, timeout=None, follow_redirects=False,
-            use_basic_auth=True, use_proxy=True):
+    def GET(self, uri, data=None, headers=Headers(), cache=False, grep=False, cookies=True, respect_size_limit=True,
+            error_handling=True, timeout=None, follow_redirects=False, use_basic_auth=True, use_proxy=True,
+            use_webkit=False, save=True):
         """
         HTTP GET a URI using a proxy, user agent, and other settings
         that where previously set in opener_settings.py .
@@ -622,20 +625,17 @@ class ExtendedUrllib(object):
         new_connection = True if timeout is not None else False
         timeout = self.get_timeout(host) if timeout is None else timeout
 
-        req = HTTPRequest(uri, cookies=cookies, cache=cache, data=data,
-                          error_handling=error_handling, method='GET',
-                          retries=self.settings.get_max_retrys(),
-                          timeout=timeout, new_connection=new_connection,
-                          follow_redirects=follow_redirects,
-                          use_basic_auth=use_basic_auth, use_proxy=use_proxy)
+        req = HTTPRequest(uri, cookies=cookies, cache=cache, data=data, error_handling=error_handling, method='GET',
+                          retries=self.settings.get_max_retrys(), timeout=timeout, new_connection=new_connection,
+                          follow_redirects=follow_redirects, use_basic_auth=use_basic_auth, use_proxy=use_proxy,
+                          save=save)
         req = self.add_headers(req, headers)
 
         with raise_size_limit(respect_size_limit):
-            return self.send(req, grep=grep)
+            return self.send(req, grep=grep, use_webkit=use_webkit)
 
-    def POST(self, uri, data='', headers=Headers(), grep=True, cache=False,
-             cookies=True, error_handling=True, timeout=None,
-             follow_redirects=None, use_basic_auth=True, use_proxy=True):
+    def POST(self, uri, data='', headers=Headers(), grep=False, cache=False, cookies=True, error_handling=True,
+             timeout=None, follow_redirects=None, use_basic_auth=True, use_proxy=True, use_webkit=False, save=False):
         """
         POST's data to a uri using a proxy, user agents, and other settings
         that where set previously.
@@ -671,11 +671,9 @@ class ExtendedUrllib(object):
         new_connection = True if timeout is not None else False
         timeout = self.get_timeout(host) if timeout is None else timeout
 
-        req = HTTPRequest(uri, data=data, cookies=cookies, cache=False,
-                          error_handling=error_handling, method='POST',
-                          retries=self.settings.get_max_retrys(),
-                          timeout=timeout, new_connection=new_connection,
-                          use_basic_auth=use_basic_auth, use_proxy=use_proxy)
+        req = HTTPRequest(uri, data=data, cookies=cookies, cache=False, error_handling=error_handling, method='POST',
+                          retries=self.settings.get_max_retrys(), timeout=timeout, new_connection=new_connection,
+                          use_basic_auth=use_basic_auth, use_proxy=use_proxy, save=False)
         req = self.add_headers(req, headers)
 
         return self.send(req, grep=grep)
@@ -728,9 +726,9 @@ class ExtendedUrllib(object):
         xurllib_instance.OPTIONS will make method_name == 'OPTIONS'.
         """
         def any_method(uri_opener, method, uri, data=None, headers=Headers(),
-                       cache=False, grep=True, cookies=True,
+                       cache=False, grep=False, cookies=True,
                        error_handling=True, timeout=None, use_basic_auth=True,
-                       use_proxy=True, follow_redirects=False):
+                       use_proxy=True, follow_redirects=False, use_webkit=False):
             """
             :return: An HTTPResponse object that's the result of sending
                      the request with a method different from GET or POST.
@@ -788,7 +786,7 @@ class ExtendedUrllib(object):
             msg = 'Unsupported URL: "%s"'
             raise HTTPRequestException(msg % req.get_full_url(), request=req)
 
-    def send(self, req, grep=True):
+    def send(self, req, grep=False, use_webkit=False):
         """
         Actually send the request object.
 
@@ -805,26 +803,117 @@ class ExtendedUrllib(object):
         req = self._evasion(req)
         original_url = req._Request__original
         original_url_inst = req.url_object
-        
-        try:
-            res = self._opener.open(req)
-        except urllib2.HTTPError, e:
-            # We usually get here when response codes in [404, 403, 401,...]
-            return self._handle_send_success(req, e, grep, original_url,
-                                             original_url_inst)
-        
-        except (socket.error, URLTimeoutError,
-                ConnectionPoolException, OpenSSL.SSL.SysCallError,
-                OpenSSL.SSL.ZeroReturnError), e:
-            return self._handle_send_socket_error(req, e, grep, original_url)
-        
-        except (urllib2.URLError, httplib.HTTPException, HTTPRequestException), e:
-            return self._handle_send_urllib_error(req, e, grep, original_url)
-        
+
+        if not use_webkit:
+            try:
+                res = self._opener.open(req)
+            except urllib2.HTTPError, e:
+                # We usually get here when response codes in [404, 403, 401,...]
+                return self._handle_send_success(req, e, grep, original_url,
+                                                 original_url_inst)
+
+            except (socket.error, URLTimeoutError,
+                    ConnectionPoolException, OpenSSL.SSL.SysCallError,
+                    OpenSSL.SSL.ZeroReturnError), e:
+                return self._handle_send_socket_error(req, e, grep, original_url)
+
+            except (urllib2.URLError, httplib.HTTPException, HTTPRequestException), e:
+                return self._handle_send_urllib_error(req, e, grep, original_url)
+
+            else:
+                return self._handle_send_success(req, res, grep, original_url,
+                                                 original_url_inst)
         else:
-            return self._handle_send_success(req, res, grep, original_url,
-                                             original_url_inst)
-    
+            try:
+                res = self._request_webkit(req)
+            except Exception as e:
+                return self._generic_send_error_handler(req, e, grep, original_url)
+            else:
+                return self._handle_send_success(req, res, grep, original_url, original_url_inst)
+
+    def _request_webkit(self, req):
+        # 1. update headers
+        if req.cookies:
+            req = self.settings._cookie_handler.http_request(req)
+
+        if req.use_basic_auth:
+            auth_user, auth_passwd = cf.cf.get('basic_auth_user'), cf.cf.get('basic_auth_passwd')
+            if auth_user and auth_passwd:
+                raw = "%s:%s" % (auth_user, auth_passwd)
+                auth = 'Basic %s' % base64.b64encode(raw).strip()
+                req.add_header('Authorization', auth)
+
+        # TODO ntlm auth
+
+        # TODO
+        if req.use_proxy:
+            pass
+
+        # TODO mangle
+
+        # 2. find cache resp
+        rsp = self.settings._cache_handler.default_open(req)
+        # hash_id = gen_hash(req)
+        # if not rsp:
+        #     om.out.debug('[CACHE][MISS] [%s] hash[%s]' % (req.get_full_url(), hash_id))
+        # else:
+        #     om.out.debug('[CACHE][IN] [%s] hash[%s]' % (req.get_full_url(), hash_id))
+        if not rsp:
+            headers = dict(req.get_headers())
+            headers['Host'] = req.host
+            # TODO add gzip support for phantomjs_fetcher.js
+            # headers['Accept-Encoding'] = 'gzip, deflate'
+            headers.pop('Accept-Encoding', None)
+            headers.setdefault('User-Agent', 'CloudScan/1.1')
+
+            # 3. post to phantomjs to render page
+            read_timeout = 120
+            data = {'url': req.get_full_url(), 'timeout': read_timeout, 'method': req.get_method(),
+                    'data': req.get_data() or ''}
+            if req.follow_redirects:
+                data['follow_redirect'] = 'true'
+
+            rsp = requests.post(self.settings.webkit_address, data=data, headers=headers,
+                                timeout=(req.get_timeout(), read_timeout))
+            # TODO better to use return cookie to update opener cookiejar, also there no problem because auth plugin will update cookiejar
+            rsp.encoding = 'utf-8'
+            ret_body = rsp.json()
+            status_code = ret_body.get('status_code')
+            if status_code:
+                # 4. cast requests resp to w3af.core.data.url.HTTPResponse
+                # use capitalize to deal headers, keep the same way with w3af
+                headers = {}
+                for key, value in ret_body['headers'].iteritems():
+                    headers[key.capitalize()] = value
+
+                # TODO need to add gzip support for phantomjs_fetcher.js
+                # gzip decompress body
+                # enc_hdr = headers.get('content-encoding'.capitalize(), '')
+                # if ("gzip" in enc_hdr) or ("compress" in enc_hdr):
+                #     ret_body['content'] = gzip.GzipFile(fileobj=StringIO(ret_body['content'])).read()
+                # elif "deflate" in enc_hdr:
+                #     ret_body['content'] = zlib.decompress(ret_body['content'])
+
+                http_rsp_dict = {'code': status_code, 'msg': ret_body['msg'], 'headers': headers,
+                                 'body': ret_body['content'], 'time': ret_body['time'], 'id': None,
+                                 'uri': ret_body['orig_url'], 'redirect_uri': ret_body['url']}
+                # FIXME can not certain that whether phantomjs encode the body with charset then decode use utf-8
+                # just use utf-8 default
+                http_rsp_dict['charset'] = 'utf-8'
+                rsp = HTTPResponse.from_dict(http_rsp_dict)
+                rsp.set_alias(gen_hash(req))
+            else:
+                # deal request unreachable
+                raise Exception(ret_body['error'])
+
+            # 6. cache resp
+            try:
+                self.settings._cache_handler.http_response(req, rsp)
+            except Exception:
+                om.out.error('cache response failed, url=%s' % req.get_full_url())
+
+        return rsp
+
     def _handle_send_socket_error(self, req, exception, grep, original_url):
         """
         This error handling is separated from the other because we want to have
@@ -885,12 +974,19 @@ class ExtendedUrllib(object):
         :return: An HTTPResponse object.
         """
         # Everything went well!
+        if isinstance(res, HTTPResponse):
+            id, code, from_cache = res.get_id(), res.get_code(), res.get_from_cache()
+        else:
+            id, code = res.id, res.code
+            from_cache = hasattr(res, 'from_cache') and res.from_cache or False
+
+            res = HTTPResponse.from_httplib_resp(res, original_url=original_url_inst)
+            res.set_id(id)
+            res.set_from_cache(from_cache)
+
         rdata = req.get_data()
         if not rdata:
-            msg = ('%s %s returned HTTP code "%s"' %
-                   (req.get_method(),
-                    urllib.unquote_plus(original_url),
-                    res.code))
+            msg = ('%s %s returned HTTP code "%s"' % (req.get_method(), urllib.unquote_plus(original_url), code))
         else:
             printable_data = urllib.unquote_plus(rdata)
             if len(rdata) > 75:
@@ -899,29 +995,18 @@ class ExtendedUrllib(object):
                 printable_data = printable_data.replace('\r', ' ')
                 
             msg = ('%s %s with data: "%s" returned HTTP code "%s"'
-                   % (req.get_method(),
-                      original_url,
-                      printable_data,
-                      res.code))
+                   % (req.get_method(), original_url, printable_data, code))
 
-        from_cache = hasattr(res, 'from_cache') and res.from_cache
-        flags = ' (id=%s,from_cache=%i,grep=%i)' % (res.id, from_cache,
-                                                    grep)
-        msg += flags
+        msg += ' (id=%s,req_cache=%i,res_cache=%i,grep=%i)' % (id, req.get_from_cache, from_cache, grep)
         om.out.debug(msg)
 
-        http_resp = HTTPResponse.from_httplib_resp(res,
-                                                   original_url=original_url_inst)
-        http_resp.set_id(res.id)
-        http_resp.set_from_cache(from_cache)
-
         # Clear the log of failed requests; this request is DONE!
-        self._log_successful_response(http_resp)
+        self._log_successful_response(res)
 
         if grep:
-            self._grep(req, http_resp)
+            self._grep(req, res)
 
-        return http_resp
+        return res
 
     def _retry(self, req, grep, url_error):
         """
@@ -1044,6 +1129,8 @@ class ExtendedUrllib(object):
                           timeout=self.get_timeout(host))
         req = self.add_headers(req)
 
+        om.out.error('request occurs a lot error, going to check whether remote is UNREACHABLE.')
+
         try:
             self.send(req, grep=False)
         except HTTPRequestException, e:
@@ -1053,6 +1140,28 @@ class ExtendedUrllib(object):
         except Exception, e:
             msg = 'Internal error makes URL %s UNREACHABLE due to: "%s"'
             om.out.debug(msg % (root_url, e))
+            return False
+        else:
+            msg = 'Remote URL %s is reachable'
+            om.out.debug(msg % root_url)
+            return True
+
+    def __delay_check_again(self, root_url, host, init_delay=60):
+        om.out.error('request occurs a lot error, delay %s then check whether remote is UNREACHABLE.' % init_delay)
+        time.sleep(init_delay)
+        om.out.error('request occurs a lot error, going to check whether remote is UNREACHABLE.')
+        req = HTTPRequest(root_url, cookies=True, cache=False, error_handling=False, method='GET', retries=0,
+                          timeout=self.get_timeout(host))
+        req = self.add_headers(req)
+        try:
+            self.send(req, grep=False)
+        except HTTPRequestException, e:
+            msg = 'Remote URL %s is UNREACHABLE due to: "%s"'
+            om.out.error(msg % (root_url, e))
+            return False
+        except Exception, e:
+            msg = 'Internal error makes URL %s UNREACHABLE due to: "%s"'
+            om.out.error(msg % (root_url, e))
             return False
         else:
             msg = 'Remote URL %s is reachable'

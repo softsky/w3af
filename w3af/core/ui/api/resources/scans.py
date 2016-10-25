@@ -34,6 +34,7 @@ from w3af.core.ui.api.utils.scans import (get_scan_info_from_id,
 from w3af.core.data.parsers.doc.url import URL
 from w3af.core.controllers.w3afCore import w3afCore
 from w3af.core.controllers.exceptions import BaseFrameworkException
+from w3af.core.data.db.crawl_urls import CrawlUrls
 
 
 @app.route('/scans/', methods=['POST'])
@@ -50,10 +51,10 @@ def start_scan():
         - The URL to the newly created scan (eg. /scans/1)
         - The newly created scan ID (eg. 1)
     """
-    if not request.json or not 'scan_profile' in request.json:
+    if not request.json or 'scan_profile' not in request.json:
         abort(400, 'Expected scan_profile in JSON object')
 
-    if not request.json or not 'target_urls' in request.json:
+    if 'target_urls' not in request.json:
         abort(400, 'Expected target_urls in JSON object')
 
     scan_profile = request.json['scan_profile']
@@ -73,14 +74,14 @@ def start_scan():
     # Before trying to start a new scan we verify that the scan profile is
     # valid and return an informative error if it's not
     #
-    scan_profile_file_name, profile_path = create_temp_profile(scan_profile)
-    w3af_core = w3afCore()
-
-    try:
-        w3af_core.profiles.use_profile(scan_profile_file_name,
-                                       workdir=profile_path)
-    except BaseFrameworkException, bfe:
-        abort(400, str(bfe))
+    # scan_profile_file_name, profile_path = create_temp_profile(scan_profile)
+    # w3af_core = w3afCore()
+    #
+    # try:
+    #     w3af_core.profiles.use_profile(scan_profile_file_name,
+    #                                    workdir=profile_path)
+    # except BaseFrameworkException, bfe:
+    #     abort(400, str(bfe))
 
     #
     # Now that we know that the profile is valid I verify the scan target info
@@ -94,13 +95,13 @@ def start_scan():
         except ValueError:
             abort(400, 'Invalid URL: "%s"' % target_url)
 
-    target_options = w3af_core.target.get_options()
-    target_option = target_options['target']
-    try:
-        target_option.set_value([URL(u) for u in target_urls])
-        w3af_core.target.set_options(target_options)
-    except BaseFrameworkException, bfe:
-        abort(400, str(bfe))
+    # target_options = w3af_core.target.get_options()
+    # target_option = target_options['target']
+    # try:
+    #     target_option.set_value([URL(u) for u in target_urls])
+    #     w3af_core.target.set_options(target_options)
+    # except BaseFrameworkException, bfe:
+    #     abort(400, str(bfe))
 
     #
     # Finally, start the scan in a different thread
@@ -239,3 +240,13 @@ def scan_stop(scan_id):
     t.start()
 
     return jsonify({'message': 'Stopping scan'})
+
+
+@app.route('/scans/<int:scan_id>/urls/', methods=['GET'])
+@requires_auth
+def list_url(scan_id):
+    scan_info = get_scan_info_from_id(scan_id)
+    if scan_info is None:
+        abort(404, 'Scan not found')
+
+    return jsonify({'items': CrawlUrls().get()})

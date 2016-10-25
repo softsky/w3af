@@ -23,6 +23,7 @@ from __future__ import with_statement, print_function
 
 import atexit
 import threading
+import functools
 
 from darts.lib.utils.lru import SynchronizedLRUDict
 
@@ -32,6 +33,8 @@ from w3af.core.controllers.profiling.core_stats import core_profiling_is_enabled
 from w3af.core.data.parsers.utils.request_uniq_id import get_request_unique_id
 from w3af.core.data.parsers.mp_document_parser import mp_doc_parser
 from w3af.core.data.parsers.utils.cache_stats import CacheStats
+from w3af.core.data.db.disk_dict import DiskDict
+import w3af.core.controllers.output_manager as om
 
 
 class ParserCache(CacheStats):
@@ -74,6 +77,15 @@ class ParserCache(CacheStats):
         """
         return len(http_response.get_body()) < self.MAX_CACHEABLE_BODY_LEN
 
+    def parser_warpper(func):
+        @functools.wraps(func)
+        def inner(self, *args, **kwargs):
+            if not hasattr(self, 'disk_cache'):
+                self.disk_cache = {'key_set': set(), 'disk_cache': DiskDict('rsp_parser')}
+            return func(self, *args, **kwargs)
+        return inner
+
+    @parser_warpper
     def get_document_parser_for(self, http_response, cache=True):
         """
         Get a document parser for http_response using the cache if required
@@ -81,6 +93,11 @@ class ParserCache(CacheStats):
         :param http_response: The http response instance
         :return: An instance of DocumentParser
         """
+        if http_response.is_image():
+            # Act just like when there is no parser
+            msg = 'There is no parser for image("%s")' % (http_response.get_url())
+            raise BaseFrameworkException(msg)
+
         hash_string = get_request_unique_id(http_response)
 
         parser_finished = self._parser_finished_events.get(hash_string, None)
@@ -100,34 +117,44 @@ class ParserCache(CacheStats):
         self.inc_query_count()
 
         parser = self._cache.get(hash_string, None)
-        if parser is not None:
+        if parser:
             self._handle_cache_hit(hash_string)
-            return parser
+            # om.out.debug('[parser cache][memory] Hit for %s(%s)' % (http_response.get_uri().url_string, hash_string))
         else:
-            # Not in cache, have to work.
-            self._handle_cache_miss(hash_string)
-
+            # om.out.debug('[parser cache][memory] Miss for %s(%s)' % (http_response.get_uri().url_string, hash_string))
             # Create a new instance of DocumentParser, add it to the cache
             event = threading.Event()
             self._parser_finished_events[hash_string] = event
+            
+            # Not in cache, have to work.
+            self._handle_cache_miss(hash_string)
 
             try:
-                parser = mp_doc_parser.get_document_parser_for(http_response)
-            except:
-                # Act just like when there is no parser
-                msg = 'There is no parser for "%s".' % http_response.get_url()
-                raise BaseFrameworkException(msg)
-            else:
-                save_to_cache = self.should_cache(http_response) and cache
-                if save_to_cache:
-                    self._cache[hash_string] = parser
+                if hash_string in self.disk_cache['key_set']:
+                    parser = self.disk_cache['disk_cache'][hash_string]
+                    # om.out.debug('[parser cache][disk] Hit for %s(%s)' % (http_response.get_uri().url_string, hash_string))
                 else:
-                    self._handle_no_cache(hash_string)
-            finally:
-                event.set()
-                self._parser_finished_events.pop(hash_string, None)
+                    # om.out.debug('[parser cache][disk] Miss for %s(%s)' % (http_response.get_uri().url_string, hash_string))
+                    try:
+                        parser = mp_doc_parser.get_document_parser_for(http_response)
+                    except Exception as e:
+                        # Act just like when there is no parser
+                        msg = 'There is no parser for "%s".e=%s' % (http_response.get_url(), e)
+                        raise BaseFrameworkException(msg)
+                    else:
+                        self.disk_cache['disk_cache'][hash_string] = parser
+                        self.disk_cache['key_set'].add(hash_string)
 
-            return parser
+                        save_to_cache = self.should_cache(http_response) and cache
+                        if save_to_cache:
+                            self._cache[hash_string] = parser
+                        else:
+                            self._handle_no_cache(hash_string)
+            finally:
+                self._parser_finished_events.pop(hash_string, None)
+                event.set()
+
+        return parser
 
 
 @atexit.register

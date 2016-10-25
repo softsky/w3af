@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 """
 import os
-
+from traceback import format_exc
 from uuid import uuid4
 from tempfile import tempdir
 
@@ -30,6 +30,8 @@ from w3af.core.ui.api.db.master import SCANS, ScanInfo
 from w3af.core.ui.api.utils.log_handler import RESTAPIOutput
 from w3af.core.controllers.w3afCore import w3afCore
 from w3af.core.data.parsers.doc.url import URL
+from w3af.core.controllers.misc.temp_dir import get_temp_dir
+from w3af.core.controllers.exc import ErrorCode
 
 
 def get_scan_info_from_id(scan_id):
@@ -47,10 +49,13 @@ def create_temp_profile(scan_profile):
     :param scan_profile: The contents of a profile configuration
     :return: The scan profile file name and the directory where it was created
     """
-    scan_profile_file = os.path.join(tempdir, '%s.pw3af' % uuid4())
-    file(scan_profile_file, 'w').write(scan_profile)
+    temp_dir = get_temp_dir()
+    temp_dir = os.path.exists(temp_dir) and temp_dir or tempdir
+    scan_profile_file = os.path.join(temp_dir, '%s.pw3af' % uuid4())
+    with open(scan_profile_file, 'w') as fp:
+        fp.write(scan_profile)
 
-    return scan_profile_file, tempdir
+    return scan_profile_file, temp_dir
 
 
 def start_scan_helper(target_urls, scan_profile, scan_info_setup):
@@ -95,6 +100,12 @@ def start_scan_helper(target_urls, scan_profile, scan_info_setup):
         w3af_core.verify_environment()
         w3af_core.start()
     except Exception, e:
+        om.out.error('Scan start failed, trace=%s' % format_exc())
+        w3af_status = w3af_core.status
+        w3af_status.stop()
+        if w3af_status._err_code == '0':
+            w3af_status._err_code = ErrorCode.SCANNER_START_FAILED
+
         scan_info.exception = e
         try:
             w3af_core.stop()

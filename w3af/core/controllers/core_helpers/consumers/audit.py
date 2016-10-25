@@ -48,6 +48,7 @@ class audit(BaseConsumer):
     def _teardown(self):
         # End plugins
         for plugin in self._consumer_plugins:
+            om.out.debug('[END] audit plugin %s enter' % plugin.__class__.__name__)
             try:
                 plugin.end()
             except BaseFrameworkException, e:
@@ -55,6 +56,8 @@ class audit(BaseConsumer):
             except Exception, e:
                 self.handle_exception('audit', plugin.get_name(),
                                       'plugin.end()', e)
+            finally:
+                om.out.debug('[END] audit plugin %s finished' % plugin.__class__.__name__)
 
     def get_original_response(self, fuzzable_request):
         plugin = self._consumer_plugins[0]
@@ -86,9 +89,6 @@ class audit(BaseConsumer):
         self._run_observers(fuzzable_request)
 
         for plugin in self._consumer_plugins:
-            om.out.debug('%s plugin is testing: "%s"' % (plugin.get_name(),
-                                                         fuzzable_request))
-
             # Please note that this is not perfect, it is showing which
             # plugin result was JUST taken from the Queue. The good thing is
             # that the "client" reads the status once every 500ms so the user
@@ -132,8 +132,11 @@ class audit(BaseConsumer):
         Python 3 has an error_callback in the apply_async method, which we could
         use in the future.
         """
+        om.out.debug('[audit plugin] %s is testing: "%s"' % (plugin.get_name(), fuzzable_request))
         try:
             plugin.audit_with_copy(fuzzable_request, orig_resp)
         except Exception, e:
             self.handle_exception('audit', plugin.get_name(),
                                   fuzzable_request, e)
+        finally:
+            om.out.debug('[audit plugin] %s testing finish: "%s"' % (plugin.get_name(), fuzzable_request))

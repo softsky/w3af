@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 import urllib
 import re
 import traceback
-import StringIO
+from cStringIO import StringIO
 
 from lxml import etree
 from collections import namedtuple
@@ -193,8 +193,7 @@ class SGMLParser(BaseParser):
             # body which is empty).
             return
 
-        resp_body = resp_body.encode(DEFAULT_ENCODING, errors=errors)
-        body_io = StringIO.StringIO(resp_body)
+        body_io = StringIO(resp_body.encode(DEFAULT_ENCODING, errors=errors))
         event_map = {'start': self.start,
                      'end': self.end,
                      'comment': self.comment}
@@ -216,50 +215,50 @@ class SGMLParser(BaseParser):
                                   encoding=DEFAULT_ENCODING,
                                   huge_tree=False)
 
-        for event, elem in context:
-            try:
-                event_map[event](elem)
-            except Exception, e:
-                msg = ('Found a parser exception while handling tag "%s" with'
-                       ' event "%s". The exception was: "%s"')
-                args = (elem.tag, event, e)
-                raise ParserException(msg % args)
-
-            # Memory usage improvements notes:
-            #
-            #   * These lines actually make a difference, they reduce memory
-            #     usage from ~270MB to ~230MB when parsing a huge HTML document
-            #
-            # But... these lines also create a horrible monster:
-            #
-            #   ***
-            #   Error in `python': malloc(): memory corruption (fast):
-            #   0x00007f13a40d5f70
-            #   ***
-            #
-            # Which is 100% related to the lines below, so I better remove them
-            # leaving the comment as a reminder to future devs which want to
-            # improve the parser's memory usage
-            #
-            # Maybe with a future version of lxml this doesn't happen?
-            # Comment date: 26 May 2015
-            """
-            elem.clear()
-            while elem.getprevious() is not None:
+        try:
+            for event, elem in context:
                 try:
-                    del elem.getparent()[0]
-                except TypeError:
-                    # TypeError: 'NoneType' object does not support item deletion
-                    # Happens when elem.getparent() returns None
-                    pass
-            """
+                    event_map[event](elem)
+                except Exception, e:
+                    msg = ('Found a parser exception while handling tag "%s" with'
+                           ' event "%s". The exception was: "%s"')
+                    args = (elem.tag, event, e)
+                    raise ParserException(msg % args)
+                # finally:
+                #     # Memory usage improvements notes:
+                #     #
+                #     #   * These lines actually make a difference, they reduce memory
+                #     #     usage from ~270MB to ~230MB when parsing a huge HTML document
+                #     #
+                #     # But... these lines also create a horrible monster:
+                #     #
+                #     #   ***
+                #     #   Error in `python': malloc(): memory corruption (fast):
+                #     #   0x00007f13a40d5f70
+                #     #   ***
+                #     #
+                #     # Which is 100% related to the lines below, so I better remove them
+                #     # leaving the comment as a reminder to future devs which want to
+                #     # improve the parser's memory usage
+                #     #
+                #     # Maybe with a future version of lxml this doesn't happen?
+                #     # Comment date: 26 May 2015
+                #     elem.clear()
+                #     while elem.getprevious() is not None:
+                #         try:
+                #             del elem.getparent()[0]
+                #         except TypeError:
+                #             # TypeError: 'NoneType' object does not support item deletion
+                #             # Happens when elem.getparent() returns None
+                #             pass
 
-        # Memory usage reduction
-        del context
+        finally:
+            # Memory usage reduction
+            del context
 
-        # This was called when using etree.fromstring, and I used it so
-        # let's keep calling it
-        self.close()
+            # This was called when using etree.fromstring, and I used it so
+            # let's keep calling it
+            self.close()
 
     def get_tags_by_filter(self, tags, yield_text=False):
         """
@@ -279,7 +278,7 @@ class SGMLParser(BaseParser):
             # Don't even try to parse this response, it's empty anyways.
             raise StopIteration
 
-        body_io = StringIO.StringIO(resp_body.encode(DEFAULT_ENCODING))
+        body_io = StringIO(resp_body.encode(DEFAULT_ENCODING))
 
         # Performance notes, see "_parse_response_body_as_string"
         context = etree.iterparse(body_io,

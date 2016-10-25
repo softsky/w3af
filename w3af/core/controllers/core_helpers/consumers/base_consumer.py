@@ -32,6 +32,7 @@ from w3af.core.controllers.core_helpers.status import w3af_core_status
 from w3af.core.controllers.core_helpers.consumers.constants import POISON_PILL
 from w3af.core.controllers.threads.threadpool import Pool
 from w3af.core.data.misc.queue_speed import QueueSpeed
+import w3af.core.controllers.output_manager as om
 
 # For some reason getting a randint with a large MAX like this is faster than
 # with a small one like 10**10
@@ -119,14 +120,14 @@ class BaseConsumer(Process):
                 continue
 
             if work_unit == POISON_PILL:
-
+                om.out.debug('[CONSUMER QUIT] %s enter' % self.__class__.__name__)
                 # Close the pool and wait for everyone to finish
                 self._threadpool.close()
                 self._threadpool.join()
                 del self._threadpool
-
+                om.out.debug('[CONSUMER QUIT] %s enter teardown' % self.__class__.__name__)
                 self._teardown()
-
+                om.out.debug('[CONSUMER QUIT] %s finish teardown' % self.__class__.__name__)
                 # Finish this consumer and everyone consuming the output
                 self._out_queue.put(POISON_PILL)
                 self.in_queue.task_done()
@@ -138,6 +139,7 @@ class BaseConsumer(Process):
                     self._consume_wrapper(work_unit)
                 finally:
                     self.in_queue.task_done()
+        om.out.debug('[CONSUMER QUIT] %s quit' % self.__class__.__name__)
 
     def _teardown(self):
         raise NotImplementedError
@@ -241,6 +243,13 @@ class BaseConsumer(Process):
         Poison the loop and wait for all queued work to finish this might take
         some time to process.
         """
+        thpool_inqueue = thpool_outqueue = 0
+        if hasattr(self, '_threadpool') and self._threadpool is not None:
+            thpool_inqueue, thpool_outqueue = self._threadpool._inqueue.qsize(), self._threadpool._outqueue.qsize()
+
+        om.out.debug('[JOIN %s enter] in_queue=%s, out_queue=%s, progress=%s, pool_inqueue=%s, pool_outqueue=%s'
+                     % (self.__class__.__name__, self.in_queue_size(), self.out_queue.qsize(),
+                        len(self._tasks_in_progress), thpool_inqueue, thpool_outqueue))
         if not self.is_alive():
             # This return has a long history, follow it here:
             # https://github.com/andresriancho/w3af/issues/1172
@@ -252,6 +261,8 @@ class BaseConsumer(Process):
             self.in_queue_put(POISON_PILL)
 
         self.in_queue.join()
+
+        om.out.debug('[JOIN %s finish]' % self.__class__.__name__)
 
     def terminate(self):
         """

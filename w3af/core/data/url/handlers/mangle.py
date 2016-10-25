@@ -50,7 +50,9 @@ class MangleHandler(urllib2.BaseHandler):
             return response
 
         # Create the HTTPResponse object
-        http_resp = HTTPResponse.from_httplib_resp(response)
+        http_resp = response
+        if not isinstance(response, HTTPResponse):
+            http_resp = HTTPResponse.from_httplib_resp(response)
 
         for plugin in self._plugin_list:
             plugin.mangle_response(http_resp)

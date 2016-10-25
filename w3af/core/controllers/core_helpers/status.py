@@ -29,6 +29,7 @@ from w3af.core.controllers.misc.number_generator import consecutive_number_gener
 PAUSED = 'Paused'
 STOPPED = 'Stopped'
 RUNNING = 'Running'
+ERROR = 'Error'
 
 
 class w3af_core_status(object):
@@ -46,7 +47,9 @@ class w3af_core_status(object):
         self._paused = False
         self._start_time_epoch = None
         self.scans_completed = scans_completed
-        
+        # batman-add
+        self._err_code = '0'
+
         # This indicates the plugin that is running right now for each
         # plugin_type
         self._running_plugin = {}
@@ -56,12 +59,15 @@ class w3af_core_status(object):
         # where a phase means crawl/audit
         self._current_fuzzable_request = {}
 
+        self.start()
+
     def pause(self, pause_yes_no):
         self._paused = pause_yes_no
         self._is_running = not pause_yes_no
         om.out.debug('The user paused/unpaused the scan.')
 
     def start(self):
+        # batman-fix add this line to avoid cloudscan-agent get task status finished which actually hasn't started yet
         self._is_running = True
         self._start_time_epoch = time.time()
 
@@ -104,7 +110,7 @@ class w3af_core_status(object):
             status_str = status_str.replace('\x00', '')
             return status_str
 
-    def set_running_plugin(self, plugin_type, plugin_name, log=True):
+    def set_running_plugin(self, plugin_type, plugin_name, log=False):
         """
         This method saves the phase and plugin name in order to be shown
         to the user.
@@ -146,7 +152,8 @@ class w3af_core_status(object):
         :return: The time (in minutes) between now and the call to start().
         """
         if self._start_time_epoch is None:
-            raise RuntimeError('Can NOT call get_run_time before start().')
+            return None
+            # raise RuntimeError('Can NOT call get_run_time before start().')
         
         now = time.time()
         diff = now - self._start_time_epoch
@@ -166,18 +173,20 @@ class w3af_core_status(object):
                  start of the scan.
         """
         if self._start_time_epoch is None:
-            raise RuntimeError('Can NOT call get_run_time before start().')
+            return None
+            # raise RuntimeError('Can NOT call get_run_time before start().')
         
         now = time.time()
         diff = now - self._start_time_epoch
         run_time = diff / 60.0
         return int(consecutive_number_generator.get() / run_time)
     
-    def scan_finished(self):
+    def scan_finished(self, err_code='0'):
         self._is_running = False
         self._running_plugin = {}
         self._current_fuzzable_request = {}
         self.scans_completed += 1
+        self._err_code = err_code
 
     def get_current_fuzzable_request(self, plugin_type):
         """
@@ -288,7 +297,9 @@ class w3af_core_status(object):
         if self.is_paused():
             return PAUSED
 
-        elif not self.is_running():
+        if not self.is_running():
+            if self._err_code != '0':
+                return ERROR
             return STOPPED
 
         return RUNNING
@@ -312,13 +323,13 @@ class w3af_core_status(object):
 
         data = {
                 'status': self.get_simplified_status(),
+                'err_code': self._err_code,
                 'is_paused': self.is_paused(),
                 'is_running': self.is_running(),
 
                 'active_plugin':
                     {'crawl': self.get_running_plugin('crawl'),
-                     'audit': self.get_running_plugin('audit')}
-                ,
+                     'audit': self.get_running_plugin('audit')},
 
                 'current_request':
                     {'crawl': crawl_fuzzable_request,

@@ -96,13 +96,14 @@ def get_versions():
     return versions
 
 
+# batman-fix no need this
 def create_crash_file(exception):
-    filename = 'w3af-crash-%s.txt' % rand_alnum(5)
-    filename = os.path.join(gettempdir(), filename)
-    crash_dump = file(filename, 'w')
-    crash_dump.write(_('Submit this bug here:'
-                       ' https://github.com/andresriancho/w3af/issues/new \n'))
-    crash_dump.write(get_versions())
-    crash_dump.write(exception)
-    crash_dump.close()
-    return filename
+    return None
+    # filename = "w3af-crash-" + rand_alnum(5) + ".txt"
+    # filename = os.path.join(gettempdir(), filename)
+    # crash_dump = file(filename, "w")
+    # crash_dump.write(_('Submit this bug here: https://github.com/andresriancho/w3af/issues/new \n'))
+    # crash_dump.write(get_versions())
+    # crash_dump.write(exception)
+    # crash_dump.close()
+    # return filename

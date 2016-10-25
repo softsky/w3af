@@ -133,6 +133,7 @@ class ExceptionHandler(object):
         om.out.debug('Logged "%s" to "%s"' % (edata.get_exception_class(),
                                               filename))
 
+    # batman-fix no need this
     def write_crash_file(self, edata):
         """
         Writes the exception data to a random file in /tmp/ right after the
@@ -142,12 +143,14 @@ class ExceptionHandler(object):
 
         :return: None
         """
-        filename = 'w3af-crash-%s.txt' % rand_alnum(5)
-        filename = os.path.join(tempfile.gettempdir(), filename)
-        crash_dump = file(filename, "w")
-        crash_dump.write(edata.get_details())
-        crash_dump.close()
-        return filename
+        om.out.error(edata.get_details())
+        return None
+        # filename = 'w3af-crash-%s.txt' % rand_alnum(5)
+        # filename = os.path.join(tempfile.gettempdir(), filename)
+        # crash_dump = file(filename, "w")
+        # crash_dump.write(edata.get_details())
+        # crash_dump.close()
+        # return filename
 
     def clear(self):
         self._exception_data = []

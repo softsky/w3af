@@ -59,6 +59,7 @@ from w3af.core.controllers.exceptions import (BaseFrameworkException,
                                               ScanMustStopException,
                                               ScanMustStopByUnknownReasonExc,
                                               ScanMustStopByUserRequest)
+from w3af.core.controllers.exc import ErrorCode
 
 from w3af.core.data.url.extended_urllib import ExtendedUrllib
 from w3af.core.data.kb.knowledge_base import kb
@@ -199,20 +200,26 @@ class w3afCore(object):
                                        self.plugins.get_all_plugin_options())
 
         self._first_scan = False
-        
+        err_code = ErrorCode.NORMAL
         try:
-            self.strategy.start()
+            err_code = self.strategy.start()
         except MemoryError:
             print(NO_MEMORY_MSG)
+            err_code = ErrorCode.SYS_NO_ENOUGH_MEM
             om.out.error(NO_MEMORY_MSG)
+            om.out.error(traceback.format_exc())
 
         except OSError, os_err:
             # https://github.com/andresriancho/w3af/issues/10186
             # OSError: [Errno 12] Cannot allocate memory
             if os_err.errno == errno.ENOMEM:
+                err_code = ErrorCode.SYS_NO_ENOUGH_MEM
                 print(NO_MEMORY_MSG)
                 om.out.error(NO_MEMORY_MSG)
+                om.out.error(traceback.format_exc())
             else:
+                err_code = ErrorCode.SCANNER_INTERNAL_ERROR
+                om.out.error(traceback.format_exc())
                 raise
 
         except IOError as (error_id, error_msg):
@@ -223,27 +230,35 @@ class w3afCore(object):
                        ' is running low on free space. Check the "%s" directory'
                        ' size, overall disk usage and start the scan again.')
                 msg %= get_home_dir()
-
+                err_code = ErrorCode.SYS_NO_ENOUGH_DISK
                 print(msg)
                 om.out.error(msg)
+                om.out.error(traceback.format_exc())
             else:
+                err_code = ErrorCode.SCANNER_INTERNAL_ERROR
+                om.out.error(traceback.format_exc())
                 raise
 
         except threading.ThreadError, te:
+            err_code = ErrorCode.SCANNER_INTERNAL_ERROR
+            om.out.error(traceback.format_exc())
             handle_threading_error(self.status.scans_completed, te)
 
-        except HTTPRequestException, hre:
+        except HTTPRequestException:
             # TODO: These exceptions should never reach this level
             #       adding the exception handler to raise them and fix any
             #       instances where it happens.
+            err_code = ErrorCode.TARGET_UNREACHABLE
+            om.out.error(traceback.format_exc())
             raise
 
-        except ScanMustStopByUserRequest, sbur:
+        except ScanMustStopByUserRequest:
             # I don't have to do anything here, since the user is the one that
             # requested the scanner to stop. From here the code continues at the
             # "finally" clause, which simply shows a message saying that the
             # scan finished.
-            om.out.information('%s' % sbur)
+            err_code = ErrorCode.USER_OP_STOP
+            om.out.error(traceback.format_exc())
 
         except ScanMustStopByUnknownReasonExc:
             #
@@ -252,30 +267,37 @@ class w3afCore(object):
             # exception, and if we're lucky users reporting it to our issue
             # tracker
             #
+            err_code = ErrorCode.TARGET_UNREACHABLE
+            om.out.error(traceback.format_exc())
             raise
 
         except ScanMustStopException, wmse:
+            err_code = ErrorCode.TARGET_UNREACHABLE
             error = ('The following error was detected and could not be'
                      ' resolved:\n%s\n')
             om.out.error(error % wmse)
+            om.out.error(traceback.format_exc())
 
-        except Exception, e:
-            msg = 'Unhandled exception "%s", traceback:\n%s'
-            om.out.error(msg % (e, traceback.format_exc()))
+        except Exception:
+            err_code = ErrorCode.SCANNER_INTERNAL_ERROR
+            om.out.error(traceback.format_exc())
             raise
 
         finally:
             time_spent = self.status.get_scan_time()
 
-            om.out.information('Scan finished in %s' % time_spent)
+            om.out.information('Scan finished in %s, err_code=%s' % (time_spent, err_code))
             om.out.information('Stopping the core...')
 
             self.strategy.stop()
             self.scan_end_hook()
 
+            om.out.information('core stopped...status=%s, err_code=%s'
+                               % (self.status.get_simplified_status(), self.status._err_code))
+
             # Make sure this line is the last one. This avoids race conditions
             # https://github.com/andresriancho/w3af/issues/1487
-            self.status.scan_finished()
+            self.status.scan_finished(err_code)
 
     @property
     def worker_pool(self):

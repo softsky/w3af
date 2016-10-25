@@ -76,9 +76,15 @@ class CacheHandler(urllib2.BaseHandler):
             return None
 
     def http_response(self, request, response):
-        # Set unique numeric identifier
-        request.id = response.id = core_num_gen.inc()
-        CacheClass.store_in_cache(request, response)
+        if not isinstance(response, CacheClass):
+            # Set unique numeric identifier
+            request.id = response.id = core_num_gen.inc()
+            if request.save_rsp:
+                CacheClass.store_in_cache(request, response)
+        else:
+            # must set request id, because get kb traffic need it
+            request.id = response.id
+
         return response
 
     https_response = http_response

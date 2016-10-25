@@ -85,6 +85,9 @@ class MiscSettings(Configurable):
         cf.cf.save('non_targets', [])
         cf.cf.save('stop_on_first_exception', False)
 
+        cf.cf.save('params_max_variants', 10)
+        cf.cf.save('path_max_variants', 50)
+
     def get_options(self):
         """
         :return: A list of option objects for this plugin.
@@ -147,6 +150,16 @@ class MiscSettings(Configurable):
         options = ['tmb', 'all', 'tb', 't', 'b']
         opt = opt_factory('form_fuzzing_mode', options, d, COMBO, help=h,
                           tabid='Fuzzer parameters')
+        ol.add(opt)
+
+        desc = ('crawl params variant limit(%s)' % cf.cf.get('params_max_variants'))
+        opt = opt_factory('params_max_variants', cf.cf.get('params_max_variants'),
+                          desc, INT, tabid='Fuzzer parameters')
+        ol.add(opt)
+
+        desc = ('crawl path variant limit(%s)' % cf.cf.get('path_max_variants'))
+        opt = opt_factory('path_max_variants', cf.cf.get('path_max_variants'),
+                          desc, INT, tabid='Fuzzer parameters')
         ol.add(opt)
 
         ######## Core parameters ########
@@ -212,7 +225,7 @@ class MiscSettings(Configurable):
         :return: No value is returned.
         """
         to_save = ('fuzz_cookies', 'fuzz_form_files', 'fuzz_url_filenames',
-                   'fuzz_url_parts', 'fuzzed_files_extension',
+                   'fuzz_url_parts', 'fuzzed_files_extension', 'params_max_variants', 'path_max_variants',
                    'form_fuzzing_mode', 'max_discovery_time',
                    'fuzzable_headers', 'interface', 'local_ip_address',
                    'msf_location', 'stop_on_first_exception',
